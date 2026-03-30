@@ -151,7 +151,7 @@ class Othellogame {
     sendrequest(newgame = false, humanmove = null, human = null, player = null) {
         console.log('...request sent with: newgame=', newgame, 'humanmove=', humanmove, 'human=', human, 'player=', player);
         this.message2.disabled = true;
-        fetch('/play', {
+        fetch('othello/play', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 'newgame': newgame, 'humanmove': humanmove, 'human': human, 'player': player}),
