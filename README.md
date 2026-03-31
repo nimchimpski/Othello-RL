@@ -31,3 +31,18 @@ Profiling (cProfile, 50 games) reveals the following hotspots:
 - Fine-tune existing Q-tables by re-running `train()` with the same filename — it auto-loads and continues training
 - Note: restarting training resets alpha to 0.5 (high), so short top-ups (<20k games) may temporarily degrade performance before improving it
 
+### Planned Development ###
+
+**Heuristic-guided play mode (user toggle)**
+
+Add a UI switch so the player can choose between:
+- **Pure Q-table mode** (current): action selected solely from Q-table lookup; falls back to random for unseen states
+- **Heuristic-assisted mode**: for unseen/tied states, rank available moves using the existing `evalweights()` positional weight matrix (corners > edges > centre) instead of random selection
+
+Implementation sketch:
+- Pass a `use_heuristic=True/False` flag from the frontend toggle to the `/othello/play` route
+- In `OthelloAI.choose_action()`, when no Q-value is available (or values are tied), fall back to `evalweights()` to pick the best-weighted available move rather than choosing randomly
+- No retraining required — purely a change to inference-time action selection
+
+This would immediately improve play quality in the opening and mid-game where state-space coverage is sparse, while keeping the pure RL mode available for comparison.
+
