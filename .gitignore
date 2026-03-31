@@ -1,5 +1,9 @@
 q-learning.code-workspace
 __pychahce__/
 ```
+.venv/
 venv/
 z/
+qtables/
+qtable.pickle
+DS_store/
