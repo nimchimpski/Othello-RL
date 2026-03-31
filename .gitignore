@@ -21,7 +21,7 @@ othello.code-workspace
 instance/database.db
 test/__pycache__/test_othello.cpython-310-pytest-7.4.4.pyc
 .vscode/settings.json
-qtables/
+*.pickle
 plots/
 instance/
 test/__pycache__/test_perspective.cpython-310-pytest-8.0.0.pyc
