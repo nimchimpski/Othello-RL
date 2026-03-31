@@ -23,7 +23,7 @@ test/__pycache__/test_othello.cpython-310-pytest-7.4.4.pyc
 .vscode/settings.json
 *.pickle
 plots/
-instance/
+*.db
 test/__pycache__/test_perspective.cpython-310-pytest-8.0.0.pyc
 __pycache__/othello.cpython-311.pyc
 .vscode/launch.json
