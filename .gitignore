@@ -28,3 +28,5 @@ test/__pycache__/test_perspective.cpython-310-pytest-8.0.0.pyc
 __pycache__/othello.cpython-311.pyc
 .vscode/launch.json
 -othello.code-workspace
+qtable.pickle
+

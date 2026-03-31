@@ -22,7 +22,7 @@ qtable = 'masterq'
 aiplayer = othello.OthelloAI(epsilon = 0)
 print(f'---aiplayer.epsilon= {aiplayer.epsilon}')
 aiplayer.q = aiplayer.load_data(qtable)
-print(f'---loaded q table = {aiplayer.q}')
+# print(f'---loaded q table = {aiplayer.q}')
 
 
 ####      CONFIGURE PROXYFIX WITH THE CORRECT PARAMETERS
@@ -109,12 +109,12 @@ def index():
         session['sessionid'] = str(uuid.uuid4())
         sessionid = session['sessionid']
     # print(f'---sessionid={sessionid}')
-    game = othello.Othello()
+    game = othello.Othello(size=6)
     size = game.size
     # render page with size of board variable
     return render_template('index.html', size=size)
 
-@app.route('/play', methods=['POST', 'GET'])
+@app.route('/othello/play', methods=['POST', 'GET'])
 def play():
     # print('>>>PLAY ROUTE GET')
 
@@ -129,7 +129,7 @@ def play():
     # print(f'---sessionid={sessionid}')
 
     ####      CREATE GAME INSTANCE
-    game = othello.Othello()
+    game = othello.Othello(size=6)
     
     ####      GET THE DB ROW
     db_row = Gamedb.query.filter_by(dbsessionid=sessionid).first()

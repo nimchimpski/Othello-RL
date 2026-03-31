@@ -22,7 +22,7 @@ MONITOR = False
 
 class Othello():
 
-    def __init__(self, size=4):
+    def __init__(self, size=6):
         """
         Initialize game board.
         Each game board has
