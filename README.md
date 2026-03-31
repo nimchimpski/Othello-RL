@@ -31,6 +31,9 @@ Profiling (cProfile, 50 games) reveals the following hotspots:
 - Fine-tune existing Q-tables by re-running `train()` with the same filename — it auto-loads and continues training
 - Note: restarting training resets alpha to 0.5 (high), so short top-ups (<20k games) may temporarily degrade performance before improving it
 
+**Development Idea:**
+- Refactor training and evaluation code to use NumPy vectorized operations instead of Python loops where possible. This can significantly speed up array and matrix manipulations, especially in Q-table updates and board evaluations.
+
 ### Planned Development ###
 
 **Heuristic-guided play mode (user toggle)**
