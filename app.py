@@ -10,7 +10,6 @@ import uuid
 import os
 import pickle
 import time
-
 import othello as othello
 # hello me
 ####  OPTION TO CHANGE STATIC LOCATION!
@@ -18,9 +17,11 @@ import othello as othello
 app = Flask(__name__ )
 app.secret_key = "supermofustrongpword"
 
+qtable = 'masterq'
+
 aiplayer = othello.OthelloAI(epsilon = 0)
 print(f'---aiplayer.epsilon= {aiplayer.epsilon}')
-aiplayer.q = aiplayer.load_data('empty')
+aiplayer.q = aiplayer.load_data(qtable)
 print(f'---loaded q table = {aiplayer.q}')
 
 

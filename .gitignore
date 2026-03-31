@@ -2,6 +2,7 @@ q-learning.code-workspace
 __pychahce__/
 ```
 venv/
+.venv/
 z/
 __pycache__/calculator.cpython-310.pyc
 test/__pycache__/test_othello.cpython-310-pytest-8.0.0.pyc
