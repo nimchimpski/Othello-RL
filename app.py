@@ -175,6 +175,12 @@ def play():
 
             ####   RESET BOARD
             board = game.create_board()
+            # Server controls the opening turn: black always starts.
+            # If human is white (-1), AI (black) should take the first move.
+            if human == WHITE:
+                player = BLACK
+            else:
+                player = human
             # print(f'---board initialised--{board}-')
             # print(f'---player= {human}---')
             # print(f'\n*******player= {player}---')
