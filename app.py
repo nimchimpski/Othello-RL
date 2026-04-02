@@ -11,6 +11,7 @@ import os
 import pickle
 import time
 import othello as othello
+import threading
 # hello me
 ####  OPTION TO CHANGE STATIC LOCATION!
 # app = Flask(__name__, static_folder='../sharedstatic')
@@ -19,10 +20,21 @@ app.secret_key = "supermofustrongpword"
 
 qtable = 'masterq'
 
-aiplayer = othello.OthelloAI(epsilon = 0)
-print(f'---aiplayer.epsilon= {aiplayer.epsilon}')
-aiplayer.q = aiplayer.load_data(qtable)
+# aiplayer = othello.OthelloAI(epsilon = 0)
+aiplayer = None
+_ai_lock = threading.Lock()
 # print(f'---loaded q table = {aiplayer.q}')
+
+def get_aiplayer():
+    global aiplayer
+    if aiplayer is None:
+        with _ai_lock:
+            if aiplayer is None:
+                ai = othello.OthelloAI(epsilon=0)
+                print(f"---aiplayer.epsilon= {ai.epsilon}")
+                ai.q = ai.load_data(qtable)
+                aiplayer = ai
+    return aiplayer
 
 
 ####      CONFIGURE PROXYFIX WITH THE CORRECT PARAMETERS
@@ -233,7 +245,8 @@ def play():
                 start_time = time.time()
 
                 ####     GET AI MOVE AND UPDATE BOARD
-                board, aimove = game.aimoves(board, availactions, player, aiplayer)
+                ai = get_aiplayer()
+                board, aimove = game.aimoves(board, availactions, player, ai)
 
                 ####  SAVE BOARD    
                 print(f'---board + ai move TO SAVE---')
