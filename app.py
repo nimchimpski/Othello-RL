@@ -126,7 +126,7 @@ def index():
     # render page with size of board variable
     return render_template('index.html', size=size)
 
-@app.route('/othello/play', methods=['POST', 'GET'])
+@app.route('/play', methods=['POST', 'GET'])
 def play():
     # print('>>>PLAY ROUTE GET')
 
