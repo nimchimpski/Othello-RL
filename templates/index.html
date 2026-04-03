@@ -65,8 +65,26 @@
     <p> Grey disks show valid moves. A red dot indicates the last move. Aim to capture  pieces between yours, in any direction, so they become your colour. The winner is the one with the most pieces at the end.</p>
     <br>
     <br>
-    <P>How does it work?<br>This is v.1 -  a very basic design, where the machine played itself 20000 times and....(more coming soon)<br>
-    nerdy explaination: (coming soon)</P>
+    <p>How does it work?</p>
+    <p>
+        This is a Q-learning agent — a form of reinforcement learning. The AI played itself roughly 20,000 times on a 6×6 board,
+        updating a large lookup table (the Q-table) after every move. Each entry maps a board state and a possible action
+        to an expected future reward. Over time, moves that led to wins got higher scores; losing moves got lower ones.
+    </p>
+    <p>
+        During training, the agent uses an &epsilon; (epsilon) parameter to balance <em>exploration</em> vs <em>exploitation</em>.
+        A high epsilon means the agent tries random moves to discover new strategies. As training progresses, epsilon is
+        gradually reduced. The version running here was saved at <strong>&epsilon; = 0</strong> — pure exploitation,
+        meaning the agent always picks the move it currently believes is best, with no random experimentation.
+    </p>
+    <p>
+        The Q-table is the main constraint on this approach. After 20,000 games it contained nearly 1 million unique board states,
+        stored as a Python dictionary and serialised to disk. At &epsilon; = 0, only states the agent was confident about are
+        retained, keeping the file to ~136MB on disk. A fully-trained table from longer runs can reach 600MB+, which is too large
+        to load on a small server. This is a fundamental limitation of tabular Q-learning: the table grows with every new state seen,
+        and for a 6×6 board the state space is still too large to explore exhaustively. Larger boards (8×8) would make this
+        approach completely impractical — neural networks (deep Q-learning) are the standard solution at that scale.
+    </p>
 
 <div></div>
 

@@ -15,10 +15,10 @@ import threading
 # hello me
 ####  OPTION TO CHANGE STATIC LOCATION!
 # Keep Othello static assets self-contained and namespaced to avoid collisions with other apps.
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='/othello/static')
 app.secret_key = "supermofustrongpword"
 
-qtable = 'masterq'
+qtable = 'eps0'
 
 # aiplayer = othello.OthelloAI(epsilon = 0)
 aiplayer = None
@@ -112,6 +112,7 @@ def after_request(response):
     ######  ROUTES  ######
 
 @app.route('/', methods=['GET'])
+@app.route('/othello/', methods=['GET'])
 def index():
     print('>>>INDEX ROUTE GET')
     ####       IF NO SESSIONID, CREATE ONE
@@ -126,7 +127,7 @@ def index():
     # render page with size of board variable
     return render_template('index.html', size=size)
 
-@app.route('/play', methods=['POST', 'GET'])
+@app.route('/othello/play', methods=['POST', 'GET'])
 def play():
     # print('>>>PLAY ROUTE GET')
 
