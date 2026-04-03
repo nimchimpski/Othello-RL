@@ -31,3 +31,4 @@ __pycache__/othello.cpython-311.pyc
 qtable.pickle
 *.pyc
 
++FETCH_VARS.txt
