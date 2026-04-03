@@ -214,6 +214,7 @@ def play():
             #### IF HUMAN IS NULL JUST SEND INITIAL BOARD
                 responsevars = {'newgame': True, 'player': player, 'board': board}
                 # print(f'---First responsevars= {responsevars}')
+                board = [[int(cell) if not isinstance(cell, str) else cell for cell in row] for row in board]
                 return jsonify({'newgame': True,'board': board, 'player': player})
 
         #    NOT A NEW GAME
@@ -276,6 +277,7 @@ def play():
                     print(f'no human avails?={humanavails}. GAMEOVER')
                     winner = game.calc_winner(board)
                 print(f'---response vars no ai moves: gameover={winner},player={player}, board={board}')
+                board = [[int(cell) if not isinstance(cell, str) else cell for cell in row] for row in board]
                 return jsonify({'gameover':winner, 'player': player, 'board': board})
             # print(f'---board after ai move {board}---')
             #### NOW ITS HUMANS TURN: SWITCH PLAYER
@@ -323,7 +325,8 @@ def play():
         # print(f'---respnse aimove= {aimove}')
         # print(f'---response normal  {responsedict}')
         # return json with board
-        return jsonify({'gameover': winner, 'player': player, 'board': board})
+        board = [[int(cell) if not isinstance(cell, str) else cell for cell in row] for row in board]
+        return jsonify({'gameover': winner, 'player': int(player) if player is not None else None, 'board': board})
     
  
 
