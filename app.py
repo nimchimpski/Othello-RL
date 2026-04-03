@@ -252,8 +252,8 @@ def play():
                 start_time = time.time()
 
                 ####     GET AI MOVE AND UPDATE BOARD
-                ai = get_aiplayer()
-                board, aimove = game.aimoves(board, availactions, player, ai)
+                aiplayer_obj = get_aiplayer()
+                board, aimove = game.aimoves(board, availactions, player, aiplayer_obj)
 
                 ####  SAVE BOARD    
                 print(f'---board + ai move TO SAVE---')
