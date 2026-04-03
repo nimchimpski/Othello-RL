@@ -14,7 +14,6 @@ import othello as othello
 import threading
 # hello me
 ####  OPTION TO CHANGE STATIC LOCATION!
-# app = Flask(__name__, static_folder='../sharedstatic')
 # Keep Othello static assets self-contained and namespaced to avoid collisions with other apps.
 app = Flask(__name__)
 app.secret_key = "supermofustrongpword"
