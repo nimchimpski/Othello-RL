@@ -18,7 +18,7 @@ import threading
 app = Flask(__name__)
 app.secret_key = "supermofustrongpword"
 
-qtable = 'masterq'
+qtable = 'eps0'
 
 # aiplayer = othello.OthelloAI(epsilon = 0)
 aiplayer = None
