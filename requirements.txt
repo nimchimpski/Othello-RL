@@ -20,7 +20,8 @@ matplotlib==3.8.3
 numpy==1.26.4
 packaging==23.2
 pandas==2.2.1
-pillow==13.0.0
+pillow==13.0.0; python_version >= "3.11"
+pillow==12.3.0; python_version < "3.11"
 pluggy==1.4.0
 pyparsing==3.1.1
 pytest==7.4.4
