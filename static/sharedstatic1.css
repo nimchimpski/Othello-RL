@@ -119,9 +119,10 @@
     }
     
     .cell button {
-
-        width: 100%;
-        height: 100%;
+        /* no margin: the global button margin made discs oval and stretched the cells */
+        margin: 0;
+        width: 90%;
+        height: 90%;
     }
         
         
