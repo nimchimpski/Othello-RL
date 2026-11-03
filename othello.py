@@ -19,6 +19,8 @@ PLAYER_COLS = {
 }
 VERBOSE = False
 MONITOR = False
+# weight of the lookahead position score against the move's own square value
+LOOKAHEAD_WEIGHT = 0.25
 
 class Othello():
 
@@ -381,8 +383,6 @@ class OthelloAI():
         self.q = dict() # VALUE CAN BE NONE FOR UNEXPLORED STATES
         self.alpha = alpha
         self.epsilon = epsilon
-        self.minratio = float('inf')
-        self.maxratio = -float('inf')
         self.numqupdates = 0
         self.sumdeltaqs = 0
         self.deltaqaverage = 0
@@ -620,9 +620,11 @@ class OthelloAI():
         besteval = -float('inf')
         bestactions = []
         for action in availactions:
-            # print(f"---action={action}")
-            # print(f'---availactions[action]={availactions[action]}')
-            eval = self.evaluate_action(state, action, game_instance, player)
+            # the move's own square value decides first (never give away a corner);
+            # a one-ply lookahead on the resulting position (move() works on a copy) refines it
+            newboard = game_instance.move(state, action, player)
+            eval = (self.evaluate_action(state, action, game_instance, player)
+                    + LOOKAHEAD_WEIGHT * self.evaluate_board(newboard, game_instance, player))
             # print(f"---{action} eval={eval}")
             if eval > besteval:
                 besteval = eval
@@ -702,67 +704,46 @@ class OthelloAI():
                         return True
         return False
 
-    def evaluate_mobility_and_ratio(self,board, move, player, captured_pieces):
-        # This is a placeholder for mobility and disc ratio evaluation
-        # Implement your own logic here based on the current state after the move is made and captured pieces are flipped
-        mobility_diff = 0.1  # Placeholder value
-        disc_ratio = 0.1  # Placeholder value
-        return mobility_diff, disc_ratio
-
-        # Example of making a move and evaluating it
-        move = (0, 0)  # A corner move
-        player = 1  # Assuming 1 is black
-        captured_pieces = [(0, 1), (1, 0), (1, 1)]  # Example captured pieces for this move
-        # You need to implement the logic for updating the board with the move and captured pieces
-        # new_board = make_move(board, move, player, captured_pieces)
-
-        # val = evaluate_move(new_board, move, player, captured_pieces)
-        # print(f"Move value: {val}")
-
-    def evaluate_board(self, board, instance):
-        # print(f"+++evaluate_board_2()") 
+    def evaluate_board(self, board, instance, player):
+        """
+        Scores the whole position from `player`'s perspective, whoever is to move.
+        Returns a value between -1 and 1; higher is better for `player`.
+        """
+        opponent = -player
         val = 0
         size = len(board) - 1
         player_pieces = 0
         opponent_pieces = 0
         player_frontier = 0
         opponent_frontier = 0
-        player_mobility = 0
-        opponent_mobility = 0
         empties = 0
 
         directions = [(di, dj) for di in [-1, 0, 1] for dj in [-1, 0, 1] if not (di == dj == 0)]
 
-        ####    EDGES AND CORNER PIECES
         for i in range(len(board)):
             for j in range(len(board)):
-                cell = (i, j)
-                if board[i][j] == BLACK:
-                    # count pieces
-                    player_pieces += 1
-                    val += self.evaluate_action(board, cell, instance, BLACK)
-                    # print(f"---BLACK val={val}")
-                    
-                elif board[i][j] == WHITE:
-                    # print(f"opponent_pieces += 1")
-                    opponent_pieces += 1
-                elif board[i][j] == 0:
+                owner = board[i][j]
+                if owner == EMPTY:
                     empties += 1
+                    continue
 
-                ####    FRONTIER PIECES
-                # if a position is filled
-                if board[i][j] != 0:
-                    for di, dj in directions:
-                        ni, nj = i + di, j + dj
-                        # look for an empty position next to it = frontier
-                        if 0 <= ni <= size and 0 <= nj <= size and board[ni][nj] == 0:
-                            if board[i][j] == BLACK:
-                                # print(f"player_frontier += 1")
-                                player_frontier += 1
-                            else:
-                                # print(f"opponent_frontier += 1")
-                                opponent_frontier += 1
-                            break
+                ####    EDGES AND CORNER PIECES
+                if owner == player:
+                    player_pieces += 1
+                    val += self.evaluate_action(board, (i, j), instance, owner)
+                else:
+                    opponent_pieces += 1
+                    val -= self.evaluate_action(board, (i, j), instance, owner)
+
+                ####    FRONTIER PIECES: a disc next to an empty square
+                for di, dj in directions:
+                    ni, nj = i + di, j + dj
+                    if 0 <= ni <= size and 0 <= nj <= size and board[ni][nj] == EMPTY:
+                        if owner == player:
+                            player_frontier += 1
+                        else:
+                            opponent_frontier += 1
+                        break
         ####   CALCULATE GAME PHASE
         if empties > 20:
             phase = 1
@@ -773,34 +754,19 @@ class OthelloAI():
         # print(f"phase= {phase}")
 
         #####      MOBILITY AND POTENTIAL MOBILITY
-        player_mobility = len(instance.available_actions(board,  BLACK))
-        opponent_mobility = len(instance.available_actions(board, WHITE))
-        
-        # Piece ratio
-        # print(f"player_pieces={player_pieces}, opponent_pieces={opponent_pieces}")
-        ratio = (player_pieces - opponent_pieces) / (player_pieces + opponent_pieces) 
+        player_mobility = len(instance.available_actions(board, player))
+        opponent_mobility = len(instance.available_actions(board, opponent))
 
-        # Assuming player_pieces and opponent_pieces are already calculated
+        # Piece ratio
         def adjusted_sigmoid(x):
             return 2 / (1 + math.exp(-x)) - 1
 
-
         total_pieces = player_pieces + opponent_pieces
         if total_pieces == 0:
-            ratio = 0  # Avoid division by zero in an empty or initial board state
+            ratio = 0  # Avoid division by zero in an empty board
         else:
             ratio = (player_pieces - opponent_pieces) / total_pieces
         ratio *= 8
-        sigratio = adjusted_sigmoid(ratio)
-        # multiply by bias
-        
-        # print(f'---sigratio= {sigratio}')
-
-        if sigratio < self.minratio:
-            self.minratio = sigratio
-        if sigratio > self.maxratio:
-            self.maxratio = sigratio
-        # print(f'--ratio= {round(ratio,2)}\n')
         if phase == 3:
             val += ratio
     
@@ -827,12 +793,12 @@ class OthelloAI():
         # IF NEXT TO CORNER
         elif self.is_corner_adjacent(action, last_index):
             corner = self.adjacent_corner(action, last_index)
-            if self.connects_to_corner(action, state, player):
-                # print(f"--- action connects to corner ")
+            owner = state[corner[0]][corner[1]]
+            # only the corner this square borders counts, not a corner further along the edge
+            if owner == player:
                 val = 0.6
-            elif state[corner[0]][corner[1]] == EMPTY:
+            elif owner == EMPTY:
                 # only risky while the corner is still empty
-                # print(f"--- action next to corner ")
                 val = -0.9
 
         
@@ -874,22 +840,6 @@ class OthelloAI():
             q = pickle.load(f)
             return q
  
-    def evalweights(self, board):
-        print(f"+++evalweights()")
-        board = np.array(board)
-        weights = np.array([
-            [1, -0.25, 0.1,  0.1, -0.25, 1],
-            [-0.25, -0.25, 0.01, 0.01, -0.25, -0.25],
-            [0.1, 0.01, 0.05, 0.05, 0.01, 0.1],
-            [0.1, 0.01, 0.05, 0.05, 0.01, 0.1],
-            [-0.25, -0.25, 0.01, 0.01, -0.25, -0.25],
-            [1, -0.25, 0.1,  0.1, -0.25, 1]
-        ])
-
-        # Element-wise multiplication followed by sum
-        result = np.sum(board * weights)
-        return result
-
     def generate_2_tuples(self, board_size):
         tuples_list = []
         for k in range (1,10):
