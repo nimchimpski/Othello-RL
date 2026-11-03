@@ -15,12 +15,12 @@ Win rate and win/loss ratio are recorded.
 A flask app presents a web page game where the user can play a model, using a predetermined Q-table.
 The baord is updated with AJAX.
 
-The AI picks the move with the highest Q-value. The Q-table only covers a small part of the 6x6 state space, so many positions are not in it. For those the web app falls back to a positional heuristic (`OthelloAI.evaluate_action()`), choosing randomly between equally-scored moves:
+The AI picks the move with the highest Q-value. The Q-table only covers a small part of the 6x6 state space, so many positions are not in it. For those the web app falls back to a positional heuristic (`OthelloAI.choose_evaluated_action()`). Each legal move is scored as its own square value (`OthelloAI.evaluate_action()`, table below) plus `LOOKAHEAD_WEIGHT` times a one-ply lookahead: the move is played on a copy of the board and the resulting position is scored by `OthelloAI.evaluate_board()` (square values, frontier discs, mobility and, in the endgame, disc ratio, from the mover's perspective). Equally-scored moves are chosen randomly:
 
 | Square | Score |
 |---|---|
 | Corner | +0.9 |
-| Next to a corner you hold, connected to it | +0.6 |
+| Next to a corner you hold (C- and X-squares) | +0.6 |
 | Edge, connected to a corner you hold | +0.5 |
 | Other edge square | +0.3 |
 | Centre, or next to a corner the opponent already holds | 0 |
@@ -70,4 +70,5 @@ Other ideas:
 - Add a one-move lookahead: reject a move if it lets the opponent take a corner on their reply
 - Replace the static weights with a shallow search (see the 3-ply result above)
 - Also use the heuristic to break ties between equal Q-values (currently only used when the position is unknown)
+- `OthelloAI.generate_2_tuples()` is a partially developed, unused start on an n-tuple network: it lists every pair of neighbouring squares (horizontal, vertical, both diagonals). The missing parts are a weight table per tuple, a position evaluator that sums the lookups, and the learning update. Unlike the Q-table it would generalise across positions that share local patterns, so it is an interesting direction.
 
