@@ -308,9 +308,11 @@ class Othello():
         else:
             return None
 
-    def aimoves(self, board, availactions, player, aiplayer):
+    def aimoves(self, board, availactions, player, aiplayer, use_heuristic=False):
         """
         geta the AI move, returns new board and move() 
+        If the Q-table has no answer, play the best heuristic move when use_heuristic
+        is True, otherwise a random move (keeps training and evaluation unchanged).
         """
         if VERBOSE:
             print(f'+++aimoves()')
@@ -327,18 +329,10 @@ class Othello():
         if VERBOSE:
             print(f'---q table returns= {aimove}')
         if not aimove:
-            '''
-            eval act:
-            compare all availact outcomes board evaluations,???
-            '''
-            # print(f'---MAKING RANDOM MOVE')
-            aimove = random.choice(list(availactions.items()))
-
-            ####  TODO DISABLED EVALUATION !!!
-
-            # aimove = aiplayer.choose_evaluated_action(aiboard, availactions, self)
-
-            # print(f'---evaluated action= {aimove}') 
+            if use_heuristic:
+                aimove = aiplayer.choose_evaluated_action(aiboard, availactions, self, player)
+            else:
+                aimove = random.choice(list(availactions.items()))
         # print(f'---board before ai move ')
         # self.printboard(board)
         #### MAKE AI MOVE
@@ -617,23 +611,27 @@ class OthelloAI():
         # print(f'+--end of choose_q_action()')
         return action, captured
     
-    def choose_evaluated_action(self, state, availactions, game_instance):
+    def choose_evaluated_action(self, state, availactions, game_instance, player):
         """
         returns action and captures
         """
         # print(f"+++choose_evaluated_action()")
         # print(f"---avail actions={availactions}")
         besteval = -float('inf')
-        bestaction = None
+        bestactions = []
         for action in availactions:
             # print(f"---action={action}")
             # print(f'---availactions[action]={availactions[action]}')
-            eval = self.evaluate_action(state, action,game_instance)
+            eval = self.evaluate_action(state, action, game_instance, player)
             # print(f"---{action} eval={eval}")
             if eval > besteval:
                 besteval = eval
-                bestaction = action
+                bestactions = [action]
+            elif eval == besteval:
+                bestactions.append(action)
             # print(f"---action={action}, besteval={besteval}")
+        # choose randomly among equally-scored moves, so play is not decided by board scan order
+        bestaction = random.choice(bestactions)
         # print(f"---bestaction={bestaction}")
         return bestaction, availactions[bestaction]
         
@@ -655,22 +653,28 @@ class OthelloAI():
         if move[0] in [1, last_index-1] and move[1] not in [0, last_index]:
             if move[0] == 1 and board[0][move[1]] == EMPTY:  # Check upper edge if move is on the second row
                 return True
-            elif move[0] == last_index-1 and board[last_index-1][move[1]] == EMPTY:  # Corrected index for lower edge check
+            elif move[0] == last_index-1 and board[last_index][move[1]] == EMPTY:  # Check lower edge if move is on the second-to-last row
                 return True
 
         # Check adjacent to horizontal edges and not at corners
         if move[1] in [1, last_index-1] and move[0] not in [0, last_index]:
             if move[1] == 1 and board[move[0]][0] == EMPTY:  # Check left edge if move is in the second column
                 return True
-            elif move[1] == last_index-1 and board[move[0]][last_index-1] == EMPTY:  # Corrected index for right edge check
+            elif move[1] == last_index-1 and board[move[0]][last_index] == EMPTY:  # Check right edge if move is in the second-to-last column
                 return True
 
         return False
 
     def is_corner(self,move, last_index):
         return move in [(0, 0), (0, last_index), (last_index, 0), (last_index, last_index)]
+
+    def adjacent_corner(self, move, last_index):
+        # the corner that a corner-adjacent square (C-square or X-square) borders
+        row = 0 if move[0] <= 1 else last_index
+        col = 0 if move[1] <= 1 else last_index
+        return (row, col)
     
-    def connects_to_corner(self, move, board):
+    def connects_to_corner(self, move, board, player):
         # Determine if a move is directly connected to a player-occupied corner with a path consisting only of player's pieces
         last_index = len(board) - 1
         corners = [(0, 0), (0, last_index), (last_index, 0), (last_index, last_index)]
@@ -685,48 +689,16 @@ class OthelloAI():
             while (x, y) != end:
                 x += dx
                 y += dy
-                if (x, y) != end and board[x][y] != BLACK:  # Skip checking the end point itself
+                if (x, y) != end and board[x][y] != player:  # Skip checking the end point itself
                     return False
             return True
     
         for corner in corners:
-            if board[corner[0]][corner[1]] == BLACK:
+            if board[corner[0]][corner[1]] == player:
                 # Directly connected if on the same row, column, or diagonal
                 if corner[0] == move[0] or corner[1] == move[1] or abs(corner[0] - move[0]) == abs(corner[1] - move[1]):
                     # Check the path between the move and the corner
                     if check_path(move, corner):
-                        return True
-        return False
-
-        # Determine if a move is directly connected to a player-occupied corner with an uninterrupted path
-        last_index = len(board) - 1
-        corners = [(0, 0), (0, last_index), (last_index, 0), (last_index, last_index)]
-
-        def check_path(corner, move):
-            # Check horizontal or vertical paths
-            if corner[0] == move[0]:  # Same row
-                for col in range(min(corner[1], move[1]) + 1, max(corner[1], move[1])):
-                    if board[move[0]][col] != player:
-                        return False
-            elif corner[1] == move[1]:  # Same column
-                for row in range(min(corner[0], move[0]) + 1, max(corner[0], move[0])):
-                    if board[row][move[1]] != player:
-                        return False
-            else:
-                # Check diagonal paths
-                row_step = 1 if move[0] < corner[0] else -1
-                col_step = 1 if move[1] < corner[1] else -1
-                row_range = range(move[0] + row_step, corner[0], row_step)
-                col_range = range(move[1] + col_step, corner[1], col_step)
-                for row, col in zip(row_range, col_range):
-                    if board[row][col] != player:
-                        return False
-            return True
-
-        for corner in corners:
-            if board[corner[0]][corner[1]] == player:
-                if corner[0] == move[0] or corner[1] == move[1] or abs(corner[0] - move[0]) == abs(corner[1] - move[1]):
-                    if check_path(corner, move):
                         return True
         return False
 
@@ -768,7 +740,7 @@ class OthelloAI():
                 if board[i][j] == BLACK:
                     # count pieces
                     player_pieces += 1
-                    val += self.evaluate_action(board, cell, instance)
+                    val += self.evaluate_action(board, cell, instance, BLACK)
                     # print(f"---BLACK val={val}")
                     
                 elif board[i][j] == WHITE:
@@ -841,7 +813,7 @@ class OthelloAI():
         # print(f"sigmoid val={val}")
         return val
     
-    def evaluate_action(self, state, action, game_instance):
+    def evaluate_action(self, state, action, game_instance, player):
         '''
 
         '''
@@ -854,45 +826,30 @@ class OthelloAI():
             val = 0.9
         # IF NEXT TO CORNER
         elif self.is_corner_adjacent(action, last_index):
-            if not self.connects_to_corner(action, game_instance.state):
-                # print(f"--- action next to corner ")
-                val = -0.9
-            elif self.connects_to_corner(action, game_instance.state):
+            corner = self.adjacent_corner(action, last_index)
+            if self.connects_to_corner(action, state, player):
                 # print(f"--- action connects to corner ")
                 val = 0.6
+            elif state[corner[0]][corner[1]] == EMPTY:
+                # only risky while the corner is still empty
+                # print(f"--- action next to corner ")
+                val = -0.9
 
         
-        # IF ON EDGE BUT NOT CORNER ADJACENT AND NOT CONNECTED TO CORNER
+        # IF ON EDGE (CORNER-ADJACENT SQUARES ARE HANDLED ABOVE)
         elif self.is_edge(action, last_index):
-            if  self.is_corner_adjacent(action, last_index) and not self.connects_to_corner(action, game_instance.state,  ):
-                print(f"---{action} doesnt connet to corner???")
-                # print(f"---action on edge")
-                val = 0.3
             # IF ON EDGE AND CONNECTED TO CORNER 
-            elif  self.connects_to_corner(action, game_instance.state,  ):
+            if self.connects_to_corner(action, state, player):
                 # print(f"---action connected to corner")
                 val = 0.5
-            elif self.is_corner_adjacent(action, last_index):
-                # print(f"---action corner adjacent")
-                val = -0.5
+            # IF ON EDGE BUT NOT CONNECTED TO CORNER
+            else:
+                # print(f"---action on edge")
+                val = 0.3
         # IF EDGE ADJACENT
         elif self.is_edge_adjacent(state, action, last_index) and not self.is_corner_adjacent(action, last_index):
             # print(f"---action edge adjacent")
             val = -0.3
-        return val
-
-        # calculate if player has more available moves than opponent
-        playeravails = game_instance.available_actions(state, player)
-        opponent = game_instance.switchplayer(player)
-        oppavails = game_instance.available_actions(state, opponent)
-        if len(playeravails) > len(oppavails):
-            print(f"---player has more available moves")
-            val += 0.5
-        elif len(playeravails) < len(oppavails):
-            print(f"---opponent has more available moves")
-            val -= 0.5
-        # val += min(1, len(avails)/10)
-
         return val
 
     def invertboard(self, board):

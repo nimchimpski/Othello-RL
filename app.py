@@ -253,7 +253,7 @@ def play():
 
                 ####     GET AI MOVE AND UPDATE BOARD
                 aiplayer_obj = get_aiplayer()
-                board, aimove = game.aimoves(board, availactions, player, aiplayer_obj)
+                board, aimove = game.aimoves(board, availactions, player, aiplayer_obj, use_heuristic=True)
 
                 ####  SAVE BOARD    
                 print(f'---board + ai move TO SAVE---')

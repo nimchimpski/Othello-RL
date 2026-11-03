@@ -1,11 +1,11 @@
 # Othello Player. Reinforcement learning with q-Table #
 
-*[CLICK TO PLAY!](http://217.174.244.37:5003/)*
+*[CLICK TO PLAY!](https://nimchimpski.com/othello/)*
 
 ### In Train function: ### 
 A model playes itself, (always as black using state inversion).
 Epsilon Greedy with a decay function ensures sufficient exploration outside the previously learnt policy.
-A Heuristic evaluation function is used after every move to update the q-table.
+The reward is 0 for every move except the last: the winner's and loser's final moves are set to +1 and -1 (0 for a tie), and earlier moves learn from it through the Q-learning update. No heuristic is used in training.
 
 ### In Evaluate function: ### 
 The model, using a specified q-table, playes against a random player.\
@@ -14,6 +14,25 @@ Win rate and win/loss ratio are recorded.
 ### Flask ###
 A flask app presents a web page game where the user can play a model, using a predetermined Q-table.
 The baord is updated with AJAX.
+
+The AI picks the move with the highest Q-value. The Q-table only covers a small part of the 6x6 state space, so many positions are not in it. For those the web app falls back to a positional heuristic (`OthelloAI.evaluate_action()`), choosing randomly between equally-scored moves:
+
+| Square | Score |
+|---|---|
+| Corner | +0.9 |
+| Next to a corner you hold, connected to it | +0.6 |
+| Edge, connected to a corner you hold | +0.5 |
+| Other edge square | +0.3 |
+| Centre, or next to a corner the opponent already holds | 0 |
+| One square in from an edge that is still empty | -0.3 |
+| Next to a corner that is still empty (C- and X-squares) | -0.9 |
+
+The fallback is switched on with `aimoves(..., use_heuristic=True)`, which only `app.py` does. Training and `evaluate()` keep the original random fallback, so their behaviour and benchmark numbers are unchanged.
+
+In ad-hoc test games (not part of the repo), with colours alternating:
+- The Q-table alone found the position in its table for only ~13% of its moves; the rest were random.
+- The heuristic on its own beat the Q-table AI 95-4 and a random player 96-4 (100 games each).
+- A small 3-ply search using corner, X-square and mobility terms beat the heuristic 55-4 (60 games), so the heuristic is a static weighting rather than a strong player.
 
 ### Training Performance ###
 Profiling (cProfile, 50 games) reveals the following hotspots:
@@ -38,14 +57,17 @@ Profiling (cProfile, 50 games) reveals the following hotspots:
 
 **Heuristic-guided play mode (user toggle)**
 
-Add a UI switch so the player can choose between:
-- **Pure Q-table mode** (current): action selected solely from Q-table lookup; falls back to random for unseen states
-- **Heuristic-assisted mode**: for unseen/tied states, rank available moves using the existing `evalweights()` positional weight matrix (corners > edges > centre) instead of random selection
+The heuristic fallback described above is now always on in the web app. Still to do is a UI switch so the player can compare:
+- **Pure Q-table mode**: action selected solely from Q-table lookup; falls back to random for unseen states
+- **Heuristic-assisted mode** (current behaviour): unseen states use `evaluate_action()` instead of random selection
 
 Implementation sketch:
-- Pass a `use_heuristic=True/False` flag from the frontend toggle to the `/othello/play` route
-- In `OthelloAI.choose_action()`, when no Q-value is available (or values are tied), fall back to `evalweights()` to pick the best-weighted available move rather than choosing randomly
+- Pass a `use_heuristic=True/False` flag from the frontend toggle to the `/play` route (the page sets the URL via `PLAY_URL`, which is `/othello/play` behind nginx)
+- Hand that flag to `game.aimoves(..., use_heuristic=...)` in `app.py`
 - No retraining required — purely a change to inference-time action selection
 
-This would immediately improve play quality in the opening and mid-game where state-space coverage is sparse, while keeping the pure RL mode available for comparison.
+Other ideas:
+- Add a one-move lookahead: reject a move if it lets the opponent take a corner on their reply
+- Replace the static weights with a shallow search (see the 3-ply result above)
+- Also use the heuristic to break ties between equal Q-values (currently only used when the position is unknown)
 
